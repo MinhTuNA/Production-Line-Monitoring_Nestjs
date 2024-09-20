@@ -2,12 +2,16 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from './users/users.module';
-import { User } from './users/entities/user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthModule } from './modules/auth/auth.module';
+import { Auth } from './modules/auth/entities/auth.entity';
+import { EmployeesModule } from './modules/employees/employees.module';
+import { Employee } from './modules/employees/entities/employee.entity';
 
 @Module({
   imports: [
+    AuthModule,
+    EmployeesModule,
     ConfigModule.forRoot(
       { isGlobal: true }
     ),
@@ -21,11 +25,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         username: configService.get<string>('MYSQL_USER'),
         password: configService.get<string>('MYSQL_PASS'),
         database: configService.get<string>('MYSQL_DATABASE'),
-        entities: [User],
+        entities: [Auth,Employee],
         synchronize: true,  // Đồng bộ schema tự động
       }),
-    }),
-    UsersModule],
+    })],
   controllers: [AppController],
   providers: [AppService],
 })
