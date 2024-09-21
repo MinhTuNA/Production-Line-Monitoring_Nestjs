@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -13,8 +13,13 @@ export class EmployeesController {
   }
 
   @Get()
-  findAll() {
-    return this.employeesService.findAll();
+  async findAll(
+    @Query('page') page: number = 1,  // Trang mặc định là 1
+    @Query('limit') limit: number = 10, // Số bản ghi mặc định trên một trang là 10
+    @Query('sortBy') sortBy: string = 'id', // Tham số trường sắp xếp
+    @Query('order') order: 'ASC' | 'DESC' = 'ASC', // Hướng sắp xếp
+  ) {
+    return this.employeesService.findAll(page,limit,sortBy,order);
   }
 
   @Get(':id')
