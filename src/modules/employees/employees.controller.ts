@@ -27,13 +27,13 @@ export class EmployeesController {
     return this.employeesService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeesService.update(+id, updateEmployeeDto);
+  @Patch()
+  update(@Body() updateEmployeeDto: UpdateEmployeeDto) {
+    return this.employeesService.update(updateEmployeeDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.employeesService.remove(+id);
+    return this.employeesService.remove(id);
   }
 }

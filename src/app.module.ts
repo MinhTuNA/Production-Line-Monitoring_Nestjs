@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { Auth } from './modules/auth/entities/auth.entity';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { Employee } from './modules/employees/entities/employee.entity';
+import { AuthenticationModule } from './authentication/authentication.module';
 
 @Module({
   imports: [
@@ -28,7 +29,8 @@ import { Employee } from './modules/employees/entities/employee.entity';
         entities: [Auth,Employee],
         synchronize: true,  // Đồng bộ schema tự động
       }),
-    })],
+    }),
+    AuthenticationModule],
   controllers: [AppController],
   providers: [AppService],
 })

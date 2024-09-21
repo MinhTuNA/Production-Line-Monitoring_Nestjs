@@ -16,23 +16,23 @@ export class EmployeesService {
     private EmployeeRepository: Repository<Employee>,
   ) { }
 
-  isEmailExist = async (Email: string) => {
-    const existingEmail = await this.EmployeeRepository.findOne({ where: { Email } });
+  isEmailExist = async (email: string) => {
+    const existingEmail = await this.EmployeeRepository.findOne({ where: { email } });
     if (existingEmail) return true;
     return false;
   }
 
-  isPhoneNumberExist = async (PhoneNumber: string) => {
-    const existingPhoneNumber = await this.EmployeeRepository.findOne({ where: { PhoneNumber } });
+  isPhoneNumberExist = async (phoneNumber: string) => {
+    const existingPhoneNumber = await this.EmployeeRepository.findOne({ where: { phoneNumber } });
     if (existingPhoneNumber) return true;
     return false;
   }
 
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const { Name, PhoneNumber, Email, Role, Pass } = createEmployeeDto
+    const { name, phoneNumber, email, role, pass } = createEmployeeDto
 
-    const isEmailExist = await this.isEmailExist(Email);
-    const isPhoneNumberExist = await this.isPhoneNumberExist(PhoneNumber);
+    const isEmailExist = await this.isEmailExist(email);
+    const isPhoneNumberExist = await this.isPhoneNumberExist(phoneNumber);
 
     if (isEmailExist) {
       throw new BadRequestException("Email đã tồn tại");
@@ -42,9 +42,9 @@ export class EmployeesService {
       throw new BadRequestException("SDT đã tồn tại");
     }
 
-    const hashPassword = await hashPasswordHelper(Pass);
+    const hashPassword = await hashPasswordHelper(pass);
     const employee = this.EmployeeRepository.create({
-      Name, PhoneNumber, Email, Role, Pass: hashPassword
+      name, phoneNumber, email, role, pass: hashPassword
     })
 
     return this.EmployeeRepository.save(employee);
@@ -55,7 +55,11 @@ export class EmployeesService {
     const [result, total] = await this.EmployeeRepository.findAndCount({
       skip: offset,
       take: limit,
+      order: {
+        [sortBy]: order, // Thêm điều kiện sắp xếp
+      },
     });
+
     const totalPages = Math.ceil(total / limit);
     return {
       data: result,
@@ -67,11 +71,21 @@ export class EmployeesService {
     return `This action returns a #${id} employee`;
   }
 
-  update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    return `This action updates a #${id} employee`;
+  async update(updateEmployeeDto: UpdateEmployeeDto) {
+    const { id, ...updateData } = updateEmployeeDto;
+    if (!id) {
+      throw new BadRequestException('ID is required for updating employee');
+    }
+    return await this.EmployeeRepository.update(id, updateData);
+
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} employee`;
+
+
+  async remove(id: string) {
+    if (!id) {
+      throw new BadRequestException('ID is required for deleting employee');
+    }
+    return await this.EmployeeRepository.delete(id);
   }
 }

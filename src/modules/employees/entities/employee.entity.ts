@@ -10,7 +10,7 @@ export class Employee {
         length: 45,
         nullable: false,
     })
-    Name: string;
+    name: string;
 
     @Column({
         type: 'varchar',
@@ -18,7 +18,7 @@ export class Employee {
         nullable: false,
         unique: true,
     })
-    PhoneNumber: string;
+    phoneNumber: string;
 
     @Column({
         type: 'varchar',
@@ -26,19 +26,19 @@ export class Employee {
         nullable: false,
         unique: true,
     })
-    Email: string;
+    email: string;
 
     @Column({
         type: 'varchar',
         length: 45,
         nullable: false,
     })
-    Role: string;
+    role: string;
 
     @Column({
         type: 'varchar',
         length: 60,
         nullable: true,
     })
-    Pass: string;
+    pass: string;
 }
