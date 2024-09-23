@@ -1,17 +1,18 @@
+
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthModule } from './modules/auth/auth.module';
-import { Auth } from './modules/auth/entities/auth.entity';
+import { AuthDbModule } from './modules/auth-db/auth-db.module';
+import { AuthDb } from './modules/auth-db/entities/auth-db.entity';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { Employee } from './modules/employees/entities/employee.entity';
-import { AuthenticationModule } from './authentication/authentication.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    AuthModule,
+    AuthDbModule,
     EmployeesModule,
     ConfigModule.forRoot(
       { isGlobal: true }
@@ -26,11 +27,11 @@ import { AuthenticationModule } from './authentication/authentication.module';
         username: configService.get<string>('MYSQL_USER'),
         password: configService.get<string>('MYSQL_PASS'),
         database: configService.get<string>('MYSQL_DATABASE'),
-        entities: [Auth,Employee],
+        entities: [AuthDb,Employee],
         synchronize: true,  // Đồng bộ schema tự động
       }),
     }),
-    AuthenticationModule],
+    AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })

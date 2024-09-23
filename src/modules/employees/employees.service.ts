@@ -5,9 +5,9 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Employee } from './entities/employee.entity';
-import { Repository } from 'typeorm';
+import { Repository,Like } from 'typeorm';
 import { hashPasswordHelper } from 'src/helper/util';
-import aqp from 'api-query-params';
+
 
 @Injectable()
 export class EmployeesService {
@@ -71,6 +71,10 @@ export class EmployeesService {
     return `This action returns a #${id} employee`;
   }
 
+  async findByEmail(email: string) {
+    return await this.EmployeeRepository.findOne({ where: { email: email } });
+  }
+
   async update(updateEmployeeDto: UpdateEmployeeDto) {
     const { id, ...updateData } = updateEmployeeDto;
     if (!id) {
@@ -79,7 +83,6 @@ export class EmployeesService {
     return await this.EmployeeRepository.update(id, updateData);
 
   }
-
 
 
   async remove(id: string) {

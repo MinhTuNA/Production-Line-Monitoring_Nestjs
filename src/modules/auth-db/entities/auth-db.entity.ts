@@ -1,7 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn} from 'typeorm';
 
 @Entity('auth')
-export class Auth {
+export class AuthDb {
+
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -26,4 +27,5 @@ export class Auth {
         nullable: true,
     })
     id_camera: string;
+
 }
