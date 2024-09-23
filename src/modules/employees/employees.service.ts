@@ -5,7 +5,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Employee } from './entities/employee.entity';
-import { Repository,Like } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { hashPasswordHelper } from 'src/helper/util';
 
 
@@ -71,8 +71,13 @@ export class EmployeesService {
     return `This action returns a #${id} employee`;
   }
 
-  async findByEmail(email: string) {
-    return await this.EmployeeRepository.findOne({ where: { email: email } });
+  async findByUser(account: string) {
+    return await this.EmployeeRepository.findOne({
+      where: [
+        { email: account },
+        { phoneNumber: account }
+      ]
+    });
   }
 
   async update(updateEmployeeDto: UpdateEmployeeDto) {

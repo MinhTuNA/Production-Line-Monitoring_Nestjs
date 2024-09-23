@@ -10,12 +10,16 @@ export class AuthService {
     private jwtService: JwtService,
   ) { }
 
-  async signIn(email: string, password: string): Promise<any> {
-    const user = await this.employeeService.findByEmail(email);
+  async validateUser(userName: string, password: string): Promise<any> {
+    const user = await this.employeeService.findByUser(userName);
     const isValidPassword = await compareHashPasswordHelper(password, user.pass);
-    if (!isValidPassword) {
-      throw new UnauthorizedException("Email/PassWord không hợp lệ");
-    }
+
+    if (!user || !isValidPassword) return null;
+    return user;
+
+  }
+
+  async login(user: any) {
     const payload = {
       sub: user.id,
       email: user.email,
@@ -24,8 +28,8 @@ export class AuthService {
       role: user.role
     };
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: this.jwtService.sign(payload),
     };
-
   }
+
 }
