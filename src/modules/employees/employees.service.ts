@@ -7,7 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Employee } from './entities/employee.entity';
 import { Repository, Like } from 'typeorm';
 import { hashPasswordHelper } from 'src/helper/util';
-
+import { CreateAuthDto } from 'src/auth/dto/create-auth.dto';
+import { v4 as uuidv4 } from 'uuid';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class EmployeesService {
@@ -95,5 +97,38 @@ export class EmployeesService {
       throw new BadRequestException('ID is required for deleting employee');
     }
     return await this.EmployeeRepository.delete(id);
+  }
+
+  async handleRegister(registerDto: CreateAuthDto){
+    const { name, phoneNumber, email, role, pass } = registerDto
+
+    const isEmailExist = await this.isEmailExist(email);
+    const isPhoneNumberExist = await this.isPhoneNumberExist(phoneNumber);
+
+    if (isEmailExist) {
+      throw new BadRequestException("Email đã tồn tại");
+    }
+
+    if (isPhoneNumberExist) {
+      throw new BadRequestException("SDT đã tồn tại");
+    }
+
+    const hashPassword = await hashPasswordHelper(pass);
+    const employee = this.EmployeeRepository.create({
+      name,
+      phoneNumber,
+      email,
+      role,
+      pass: hashPassword,
+      isActive: false,
+      codeId: uuidv4(),
+      codeExpired: dayjs().add(1, 'minute').toDate(),
+    })
+
+    return await this.EmployeeRepository.save(employee);
+
+    // trả ra phản hồi
+
+
   }
 }

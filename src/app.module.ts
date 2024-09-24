@@ -9,6 +9,9 @@ import { AuthDb } from './modules/auth-db/entities/auth-db.entity';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { Employee } from './modules/employees/entities/employee.entity';
 import { AuthModule } from './auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/passport/jwt-auth.guard';
+import { RolesGuard } from './auth/passport/role-auth.guard';
 
 @Module({
   imports: [
@@ -33,6 +36,16 @@ import { AuthModule } from './auth/auth.module';
     }),
     AuthModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, // Sau đó kiểm tra role
+    },
+  ],
 })
 export class AppModule { }

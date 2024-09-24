@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty } from "class-validator";
+import { IsEmail, IsNotEmpty, IsOptional } from "class-validator";
 
 export class CreateEmployeeDto {
 
@@ -11,6 +11,12 @@ export class CreateEmployeeDto {
     email: string;
     @IsNotEmpty({message: "vui lòng chọn role"})
     role: string;
+    @IsOptional()
+    isActive: boolean;
+    @IsOptional()
+    codeId: string;
+    @IsOptional()
+    codeExpired: Date;
     @IsNotEmpty({message: "Mật khẩu không được để trống"})
     pass: string;
 }
