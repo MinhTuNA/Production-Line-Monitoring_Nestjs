@@ -1,6 +1,5 @@
-import { IsEmail } from 'class-validator';
 import { EmployeesController } from './employees.controller';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -70,7 +69,13 @@ export class EmployeesService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} employee`;
+    const employee = this.EmployeeRepository.findOne({
+      where: { id: id }
+    })
+    if (!employee) {
+      throw new Error(`Employee with ID ${id} not found`);
+    }
+    return employee; // Trả về thông tin nhân viên
   }
 
   async findByUser(account: string) {
@@ -83,12 +88,42 @@ export class EmployeesService {
   }
 
   async update(updateEmployeeDto: UpdateEmployeeDto) {
-    const { id, ...updateData } = updateEmployeeDto;
+    const { id,name,email, phoneNumber, role,pass, } = updateEmployeeDto;
     if (!id) {
       throw new BadRequestException('ID is required for updating employee');
     }
-    return await this.EmployeeRepository.update(id, updateData);
 
+    const employee = await this.EmployeeRepository.findOne({ where: { id } });
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${id} not found`);
+    }
+
+    const isEmailExist = await this.isEmailExist(email);
+    const isPhoneNumberExist = await this.isPhoneNumberExist(phoneNumber);
+
+    if (isEmailExist && email !== employee.email) {
+      throw new BadRequestException("Email đã tồn tại");
+    }
+
+    if (isPhoneNumberExist && phoneNumber!== employee.phoneNumber) {
+      throw new BadRequestException("SDT đã tồn tại");
+    }
+
+    
+    const data: any = {};
+    if (name) data.name = name;
+    if (email) data.email = email;
+    if (phoneNumber) data.phoneNumber = phoneNumber;
+    if (role) data.role = role;
+
+    // Chỉ cập nhật mật khẩu nếu có giá trị
+    if (pass) {
+        const hashPassword = await hashPasswordHelper(pass);
+        data.pass = hashPassword; // Gán mật khẩu đã mã hóa
+    }
+    // Cập nhật nhân viên
+    await this.EmployeeRepository.update(id, data);
+    return { message: 'Employee updated successfully' };
   }
 
 
@@ -96,10 +131,11 @@ export class EmployeesService {
     if (!id) {
       throw new BadRequestException('ID is required for deleting employee');
     }
-    return await this.EmployeeRepository.delete(id);
+    await this.EmployeeRepository.delete(id);
+    return { message: 'Employee deleted successfully' };
   }
 
-  async handleRegister(registerDto: CreateAuthDto){
+  async handleRegister(registerDto: CreateAuthDto) {
     const { name, phoneNumber, email, role, pass } = registerDto
 
     const isEmailExist = await this.isEmailExist(email);
@@ -131,4 +167,6 @@ export class EmployeesService {
 
 
   }
+
+
 }

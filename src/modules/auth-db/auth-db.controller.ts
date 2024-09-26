@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { AuthDbService } from './auth-db.service';
 import { CreateAuthDbDto } from './dto/create-auth-db.dto';
 import { UpdateAuthDbDto } from './dto/update-auth-db.dto';
+import { CreateDataDto } from './dto/create-data.dto';
 
 @Controller('auth-db')
 export class AuthDbController {
@@ -18,7 +19,7 @@ export class AuthDbController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.authDbService.findOne(+id);
   }
 
@@ -31,4 +32,19 @@ export class AuthDbController {
   remove(@Param('id') id: string) {
     return this.authDbService.remove(+id);
   }
+
+  @Post(':tableName/actual')
+  async insertActual(@Param('tableName') tableName: string, @Body() createDataDto: CreateDataDto) {
+    return this.authDbService.insertActual(tableName, createDataDto);
+  }
+  @Post(':tableName/target')
+  async insertTarget(@Param('tableName') tableName: string, @Body() createDataDto: CreateDataDto) {
+    return this.authDbService.insertTarget(tableName, createDataDto);
+  }
+
+  @Get(':tableName/data')
+  async getData(@Param('tableName') tableName: string) {
+    return this.authDbService.getData(tableName);
+  }
+
 }

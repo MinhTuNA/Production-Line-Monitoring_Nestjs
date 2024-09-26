@@ -31,7 +31,7 @@ import { RolesGuard } from './auth/passport/role-auth.guard';
         password: configService.get<string>('MYSQL_PASS'),
         database: configService.get<string>('MYSQL_DATABASE'),
         entities: [AuthDb,Employee],
-        synchronize: true,  // Đồng bộ schema tự động
+        synchronize: false,  
       }),
     }),
     AuthModule],

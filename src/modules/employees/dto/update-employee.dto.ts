@@ -2,7 +2,7 @@ import { IsString, IsEmail, IsOptional, IsUUID, IsEmpty, IsNotEmpty } from 'clas
 
 export class UpdateEmployeeDto {
     @IsNotEmpty()
-    id: string;
+    id: number;
     @IsString()
     @IsOptional()
     name: string;
@@ -12,6 +12,8 @@ export class UpdateEmployeeDto {
     @IsEmail()
     @IsOptional()
     email: string;
+    @IsOptional()
+    pass: string;
     @IsString()
     @IsOptional()
     role: string;

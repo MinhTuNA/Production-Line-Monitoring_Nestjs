@@ -28,12 +28,23 @@ export class AuthService {
       role: user.role
     };
     return {
-      access_token: this.jwtService.sign(payload),
+      auth: true, // Có thể trả về giá trị này để cho biết đã xác thực thành công
+    token: this.jwtService.sign(payload), // Trả về token
+    id: user.id, // Trả về ID người dùng
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    name: user.name,
+    role: user.role, // Trả về vai trò của người dùng
     };
   }
 
   async handleRegister(registerDto: CreateAuthDto){
       return this.employeeService.handleRegister(registerDto)
+  }
+
+  async genAuthString(tableName: any){
+      const payload = {tableName};
+      return this.jwtService.sign(payload,{ expiresIn: '999 years' })
   }
 
 }
