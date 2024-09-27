@@ -30,6 +30,7 @@ import { RolesGuard } from './auth/passport/role-auth.guard';
         username: configService.get<string>('MYSQL_USER'),
         password: configService.get<string>('MYSQL_PASS'),
         database: configService.get<string>('MYSQL_DATABASE'),
+        // timezone: configService.get<string>('MYSQL_TIMEZONE'),
         entities: [AuthDb,Employee],
         synchronize: false,  
       }),

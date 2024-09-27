@@ -24,6 +24,10 @@ export class AuthDbService {
     return false;
   }
 
+  getTime = () => {
+    return dayjs().format("YYYY-MM-DD HH:00:00");
+  }
+
 
   async create(createAuthDbDto: CreateAuthDbDto): Promise<{ message: string }> {
     const { table_name } = createAuthDbDto;
@@ -58,50 +62,148 @@ export class AuthDbService {
   }
 
   async insertActual(tableName: string, createDataDto: CreateDataDto) {
-    const {actual} = createDataDto
-    const startOfHour = dayjs().format("YYYY-MM-DD HH:00:00")
+    const { actual } = createDataDto
+    const time = this.getTime();
     const query = `INSERT INTO ?? (Time, Actual)
       VALUES (?, ?)
       ON DUPLICATE KEY UPDATE Actual = Actual + VALUES(Actual);`;
-    
+
 
     try {
-      const result = await this.authDbRepository.manager.query(query, [tableName, startOfHour, actual]);
+      const result = await this.authDbRepository.manager.query(query, [tableName, time, actual]);
       return { message: 'Dữ liệu đã được ghi thành công', result };
     } catch (error) {
       throw new BadRequestException('Không thể ghi dữ liệu', error.message);
     }
   }
 
-  
+
   async insertTarget(tableName: string, createDataDto: CreateDataDto) {
-    const {target} = createDataDto
-    const startOfHour = dayjs().format("YYYY-MM-DD HH:00:00")
+    const { target } = createDataDto
+    const time = this.getTime();
     const query = `INSERT INTO ?? (Time, Target)
       VALUES (?, ?)
       ON DUPLICATE KEY UPDATE Target = VALUES(Target);`;
 
     try {
-      const result = await this.authDbRepository.manager.query(query, [tableName, startOfHour, target]);
+      const result = await this.authDbRepository.manager.query(query, [tableName, time, target]);
       return { message: 'Dữ liệu đã được ghi thành công', result };
     } catch (error) {
       throw new BadRequestException('Không thể ghi dữ liệu', error.message);
     }
   }
 
-  async getData(tableName: string) {
+  async getAllData(tableName: string) {
     const query = `SELECT * FROM ??`;
-    
+
     try {
       const result = await this.authDbRepository.manager.query(query, [tableName]);
-      return { message: 'Ghi dữ liệu thành công', data: result };
+      return { message: 'lấy dữ liệu liệu thành công', data: result };
     } catch (error) {
       throw new BadRequestException('Không thể truy xuất dữ liệu', error.message);
     }
   }
+  async getDataNow(tableNames: string[]) {
+    const timeString = this.getTime(); // Giả định có một hàm getTime() đã được định nghĩa
+    const promises = tableNames.map((tableName) => {
+      const query = `SELECT Time, Actual, Target FROM ?? WHERE Time = ?`;
+      return new Promise((resolve, reject) => {
+        this.authDbRepository.manager.query(query, [tableName, timeString])
+          .then(result => resolve({ tableName, data: result }))
+          .catch(err => {
+            console.error(`Lỗi khi lấy dữ liệu từ bảng ${tableName}:`, err);
+            reject(err);
+          });
+      });
+    });
 
+    try {
+      const data = await Promise.all(promises);
+      return { message: 'Lấy dữ liệu thành công', data };
+    } catch (error) {
+      throw new BadRequestException('Lỗi máy chủ', error.message);
+    }
+  }
+
+  
+  async getDataDay(tableNames: string[]) {
+    const timeString = dayjs().format('YYYY-MM-DD');
+    const promises = tableNames.map((tableName) => {
+      const query = `SELECT Time, Actual, Target FROM ?? WHERE Time LIKE ?`;
+      return new Promise((resolve, reject) => {
+        this.authDbRepository.manager.query(query, [tableName, `${timeString}%`])
+          .then(result => resolve({ tableName, data: result }))
+          .catch(err => {
+            console.error(`Lỗi khi lấy dữ liệu từ bảng ${tableName}:`, err);
+            reject(err);
+          });
+      });
+    });
+
+    try {
+      const data = await Promise.all(promises);
+      return { message: 'Lấy dữ liệu thành công', data };
+    } catch (error) {
+      throw new BadRequestException('Lỗi máy chủ', error.message);
+    }
+  }
+
+  async findByRange(
+    tableName: string,
+    fromDate?: string,
+    toDate?: string,
+  ): Promise<any[]> {
+    let query = `
+      SELECT * FROM ?? 
+    `;
+    const queryParams = [tableName]; // Tham số cho bảng động
+
+    // Nếu có khoảng thời gian được cung cấp
+    if (fromDate && toDate) {
+      const from = dayjs(fromDate).format('YYYY-MM-DD HH:mm:ss');
+      const to = dayjs(toDate).format('YYYY-MM-DD HH:mm:ss');
+      query += ` WHERE Time BETWEEN ? AND ? ORDER BY Time ASC`;
+      queryParams.push(from, to);
+    }
+
+    // Thực thi truy vấn với bảng động
+    return await this.authDbRepository.query(query, queryParams);
+  }
   findAll() {
     return `This action returns all authDb`;
+  }
+
+  async findAllTableNames(): Promise<string[]> {
+    const results = await this.authDbRepository.find();
+    return results.map(auth => auth.table_name); // Lấy tất cả các table_name
+  }
+
+  async getCameraId(tableName: string){
+    const table = await this.authDbRepository.findOne({
+      where: {table_name: tableName}
+    })
+    return table.id_camera
+  }
+
+  async setCameraId(tableName: string, createAuthDbDto: CreateAuthDbDto ){
+    const {id_camera} = createAuthDbDto
+    const table = await this.authDbRepository.findOne({
+      where: {table_name: tableName}
+    })
+    if(!table){
+      throw new BadRequestException(`không tìm thấy ${tableName}`)
+    }
+    await this.authDbRepository.update({table_name: tableName},{id_camera: id_camera})
+    return {
+      message: "cập nhật thành công"
+    }
+  }
+
+  async getAuthToken(tableName: string){
+    const table = await this.authDbRepository.findOne({
+      where: {table_name: tableName}
+    })
+    return table.auth_string;
   }
 
   findOne(id: number) {
@@ -112,7 +214,28 @@ export class AuthDbService {
     return `This action updates a #${id} authDb`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} authDb`;
+  async remove(tableName: string) {
+    if(!tableName)
+    {
+      throw new BadRequestException("chưa truyền tên bảng")
+    }
+
+    try {
+      await this.authDbRepository.delete({table_name: tableName})
+    } catch (error) {
+      throw new BadRequestException('Lỗi khi xóa từ bảng auth-db');
+    }
+
+    
+
+    const dropTableQuery = `DROP TABLE IF EXISTS \`${tableName}\`;`;
+  
+  try {
+    await this.authDbRepository.manager.query(dropTableQuery);
+    return { message: `Bảng ${tableName} đã được xóa thành công` };
+  } catch (error) {
+    console.error("Lỗi khi xóa bảng:", error);
+    throw new BadRequestException(`Lỗi khi xóa bảng ${tableName}: ${error.message}`);
+  }
   }
 }
