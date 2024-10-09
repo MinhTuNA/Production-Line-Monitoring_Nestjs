@@ -7,8 +7,7 @@ import { Employee } from './entities/employee.entity';
 import { Repository, Like } from 'typeorm';
 import { hashPasswordHelper } from 'src/helper/util';
 import { CreateAuthDto } from 'src/auth/dto/create-auth.dto';
-import { v4 as uuidv4 } from 'uuid';
-import dayjs from 'dayjs';
+
 
 @Injectable()
 export class EmployeesService {
@@ -29,8 +28,8 @@ export class EmployeesService {
     return false;
   }
 
-  async create(createEmployeeDto: CreateEmployeeDto) {
-    const { name, phoneNumber, email, role, pass } = createEmployeeDto
+  async create(createEmployeeDto: CreateEmployeeDto, user: any) {
+    const { name, phoneNumber, email, isAdmin, pass } = createEmployeeDto
 
     const isEmailExist = await this.isEmailExist(email);
     const isPhoneNumberExist = await this.isPhoneNumberExist(phoneNumber);
@@ -45,7 +44,12 @@ export class EmployeesService {
 
     const hashPassword = await hashPasswordHelper(pass);
     const employee = this.EmployeeRepository.create({
-      name, phoneNumber, email, role, pass: hashPassword
+      name,
+      phoneNumber,
+      email,
+      isAdmin,
+      pass: hashPassword,
+      created_by: user.id,
     })
 
     return this.EmployeeRepository.save(employee);
@@ -68,6 +72,27 @@ export class EmployeesService {
     };
   }
 
+
+  async findAllMember(page: number, limit: number, sortBy: string = 'id', order: 'ASC' | 'DESC' = 'ASC', user: any) {
+    const offset = (page - 1) * limit;
+    const [result, total] = await this.EmployeeRepository.findAndCount({
+      where: { created_by: user.id },
+      skip: offset,
+      take: limit,
+      order: {
+        [sortBy]: order,
+      },
+    });
+
+    const totalPages = Math.ceil(total / limit);
+    return {
+      data: result,
+      total: total,
+      totalPages: totalPages,
+    };
+  }
+
+
   findOne(id: number) {
     const employee = this.EmployeeRepository.findOne({
       where: { id: id }
@@ -88,7 +113,7 @@ export class EmployeesService {
   }
 
   async update(updateEmployeeDto: UpdateEmployeeDto) {
-    const { id,name,email, phoneNumber, role,pass, } = updateEmployeeDto;
+    const { id, name, email, phoneNumber, isAdmin, pass, } = updateEmployeeDto;
     if (!id) {
       throw new BadRequestException('ID is required for updating employee');
     }
@@ -105,21 +130,21 @@ export class EmployeesService {
       throw new BadRequestException("Email đã tồn tại");
     }
 
-    if (isPhoneNumberExist && phoneNumber!== employee.phoneNumber) {
+    if (isPhoneNumberExist && phoneNumber !== employee.phoneNumber) {
       throw new BadRequestException("SDT đã tồn tại");
     }
 
-    
+
     const data: any = {};
     if (name) data.name = name;
     if (email) data.email = email;
     if (phoneNumber) data.phoneNumber = phoneNumber;
-    if (role) data.role = role;
+    data.isAdmin = isAdmin;
 
     // Chỉ cập nhật mật khẩu nếu có giá trị
     if (pass) {
-        const hashPassword = await hashPasswordHelper(pass);
-        data.pass = hashPassword; // Gán mật khẩu đã mã hóa
+      const hashPassword = await hashPasswordHelper(pass);
+      data.pass = hashPassword; // Gán mật khẩu đã mã hóa
     }
     // Cập nhật nhân viên
     await this.EmployeeRepository.update(id, data);
@@ -136,7 +161,7 @@ export class EmployeesService {
   }
 
   async handleRegister(registerDto: CreateAuthDto) {
-    const { name, phoneNumber, email, role, pass } = registerDto
+    const { name, phoneNumber, email, isAdmin, pass } = registerDto
 
     const isEmailExist = await this.isEmailExist(email);
     const isPhoneNumberExist = await this.isPhoneNumberExist(phoneNumber);
@@ -154,11 +179,8 @@ export class EmployeesService {
       name,
       phoneNumber,
       email,
-      role,
+      isAdmin,
       pass: hashPassword,
-      isActive: false,
-      codeId: uuidv4(),
-      codeExpired: dayjs().add(1, 'minute').toDate(),
     })
 
     return await this.EmployeeRepository.save(employee);

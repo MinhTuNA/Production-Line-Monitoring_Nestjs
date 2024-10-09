@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('auth')
 export class AuthDb {
@@ -27,5 +27,19 @@ export class AuthDb {
         nullable: true,
     })
     id_camera: string;
+
+    @Column({
+        type: 'varchar',
+        length: 45,
+        nullable: true,
+    })
+    created_by: string;
+
+    @Column({
+        type: 'varchar',
+        length: 255,
+        nullable: true,
+    })
+    member: string;
 
 }

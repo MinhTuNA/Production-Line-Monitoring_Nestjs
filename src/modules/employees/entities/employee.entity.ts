@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('employees')
 export class Employee {
@@ -29,31 +29,10 @@ export class Employee {
     email: string;
 
     @Column({
-        type: 'varchar',
-        length: 45,
-        nullable: false,
-    })
-    role: string;
-
-    @Column({
         type: 'boolean',
         nullable: false,
-        default: false,
     })
-    isActive: boolean;
-    
-    @Column({
-        type: 'varchar',
-        length: 255,
-        nullable: true,
-    })
-    codeId: string;
-
-    @Column({
-        type: 'timestamp',
-        nullable: true,
-    })
-    codeExpired: Date;
+    isAdmin: boolean;
 
     @Column({
         type: 'varchar',
@@ -61,4 +40,11 @@ export class Employee {
         nullable: true,
     })
     pass: string;
+
+    @Column({
+        type: 'varchar',
+        length: 45,
+        nullable: true,
+    })
+    created_by: string;
 }

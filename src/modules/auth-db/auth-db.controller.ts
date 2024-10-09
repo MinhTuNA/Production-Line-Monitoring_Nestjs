@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Request } from '@nestjs/common';
 import { AuthDbService } from './auth-db.service';
 import { CreateAuthDbDto } from './dto/create-auth-db.dto';
 import { UpdateAuthDbDto } from './dto/update-auth-db.dto';
@@ -9,8 +9,8 @@ export class AuthDbController {
   constructor(private readonly authDbService: AuthDbService) { }
 
   @Post()
-  create(@Body() createAuthDbDto: CreateAuthDbDto) {
-    return this.authDbService.create(createAuthDbDto);
+  create(@Body() createAuthDbDto: CreateAuthDbDto, @Request() req) {
+    return this.authDbService.create(createAuthDbDto, req.user);
   }
 
   @Get()
@@ -18,24 +18,39 @@ export class AuthDbController {
     return this.authDbService.findAll();
   }
 
+  @Patch('update/member')
+  updateMember(@Body() updateAuthDbDto: UpdateAuthDbDto) {
+    return this.authDbService.updateMember(updateAuthDbDto)
+  }
+
+  @Delete('remove/member')
+  RemoveMember(@Query() updateAuthDbDto: UpdateAuthDbDto) {
+    return this.authDbService.removeMember(updateAuthDbDto)
+  }
+
+  @Get('table/member')
+  findAllMember(@Query('tableName') tableName: string) {
+    return this.authDbService.findAllMembers(tableName)
+  }
+
   @Get('table_names')
-  async findAllTableNames() {
-    return this.authDbService.findAllTableNames();
+  async findAllTableNames(@Request() req) {
+    return this.authDbService.findAllTableNames(req.user);
   }
 
   @Get('id_camera')
-  async getCameraId(@Query('tableName') tableName: string ) {
+  async getCameraId(@Query('tableName') tableName: string) {
     return this.authDbService.getCameraId(tableName);
   }
 
   @Post('id_camera')
-  async setCameraId(@Body() CreateAuthDbDto: CreateAuthDbDto & { tableName: string } ) {
-    const {tableName} = CreateAuthDbDto;
-    return this.authDbService.setCameraId(tableName,CreateAuthDbDto);
+  async setCameraId(@Body() createAuthDbDto: CreateAuthDbDto & { tableName: string }) {
+    const { tableName } = createAuthDbDto;
+    return this.authDbService.setCameraId(tableName, createAuthDbDto);
   }
 
   @Get('auth_token')
-  async getAuthToken(@Query('tableName') tableName: string ) {
+  async getAuthToken(@Query('tableName') tableName: string) {
     return this.authDbService.getAuthToken(tableName);
   }
 

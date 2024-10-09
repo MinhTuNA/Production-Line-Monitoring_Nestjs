@@ -1,4 +1,4 @@
-import {ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -14,7 +14,7 @@ async function bootstrap() {
     credentials: true, // Cho phép gửi cookie nếu cần
   });
 
-  app.setGlobalPrefix('api/v1',{exclude:['']});
+  app.setGlobalPrefix('api', { exclude: [''] });
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,

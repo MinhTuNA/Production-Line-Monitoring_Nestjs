@@ -9,4 +9,6 @@ export class CreateAuthDbDto {
 
     @IsOptional()
     id_camera?: string;
+    @IsOptional()
+    created_by?: string;
 }

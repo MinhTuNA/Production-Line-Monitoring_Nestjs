@@ -29,7 +29,7 @@ export class AuthDbService {
   }
 
 
-  async create(createAuthDbDto: CreateAuthDbDto): Promise<{ message: string }> {
+  async create(createAuthDbDto: CreateAuthDbDto, user: any): Promise<{ message: string }> {
     const { table_name } = createAuthDbDto;
 
     const isTableNameExist = await this.isTableNameExist(table_name);
@@ -38,8 +38,9 @@ export class AuthDbService {
       throw new BadRequestException("Tên đã tồn tại");
     }
 
+
     const auth_string = await this.authService.genAuthString(table_name);
-    const newAuth = this.authDbRepository.create({ table_name, auth_string });
+    const newAuth = this.authDbRepository.create({ table_name, auth_string, created_by: user.id });
     await this.createDynamicTable(table_name);
     await this.authDbRepository.save(newAuth);
     return { message: "Thành công" }
@@ -125,7 +126,7 @@ export class AuthDbService {
     }
   }
 
-  
+
   async getDataDay(tableNames: string[]) {
     const timeString = dayjs().format('YYYY-MM-DD');
     const promises = tableNames.map((tableName) => {
@@ -173,35 +174,49 @@ export class AuthDbService {
     return `This action returns all authDb`;
   }
 
-  async findAllTableNames(): Promise<string[]> {
+  async findAllTableNames(user: any): Promise<string[]> {
     const results = await this.authDbRepository.find();
-    return results.map(auth => auth.table_name); // Lấy tất cả các table_name
+    const id = user.id;
+    const matchingTables: string[] = [];
+
+    for (const auth of results) {
+      if ((auth.member && (auth.member.includes(id)) || auth.created_by.includes(id))) {
+        matchingTables.push(auth.table_name);
+      }
+    }
+
+    return matchingTables;
   }
 
-  async getCameraId(tableName: string){
+  async findAllMembers(tableName: any) {
+    const results = await this.authDbRepository.findOne({ where: { table_name: tableName } })
+    return results.member
+  }
+
+  async getCameraId(tableName: string) {
     const table = await this.authDbRepository.findOne({
-      where: {table_name: tableName}
+      where: { table_name: tableName }
     })
     return table.id_camera
   }
 
-  async setCameraId(tableName: string, createAuthDbDto: CreateAuthDbDto ){
-    const {id_camera} = createAuthDbDto
+  async setCameraId(tableName: string, createAuthDbDto: CreateAuthDbDto) {
+    const { id_camera } = createAuthDbDto
     const table = await this.authDbRepository.findOne({
-      where: {table_name: tableName}
+      where: { table_name: tableName }
     })
-    if(!table){
+    if (!table) {
       throw new BadRequestException(`không tìm thấy ${tableName}`)
     }
-    await this.authDbRepository.update({table_name: tableName},{id_camera: id_camera})
+    await this.authDbRepository.update({ table_name: tableName }, { id_camera: id_camera })
     return {
       message: "cập nhật thành công"
     }
   }
 
-  async getAuthToken(tableName: string){
+  async getAuthToken(tableName: string) {
     const table = await this.authDbRepository.findOne({
-      where: {table_name: tableName}
+      where: { table_name: tableName }
     })
     return table.auth_string;
   }
@@ -210,32 +225,71 @@ export class AuthDbService {
     return `This action returns a #${id} authDb`;
   }
 
+  async updateMember(updateAuthDbDto: UpdateAuthDbDto) {
+    const { table_name, member } = updateAuthDbDto
+    const table = await this.authDbRepository.findOne({ where: { table_name: table_name } });
+    if (!table) {
+      throw new BadRequestException('bảng không tồn tại');
+    }
+    const currentMembers = table.member || '';
+    const memberPattern = new RegExp(`\\b${member}\\b`);
+    if (!memberPattern.test(currentMembers)) {
+      const updatedMembers = currentMembers ? `${currentMembers}${member},` : `${member},`;
+      await this.authDbRepository.update({ table_name: table_name }, { member: updatedMembers });
+      return `Thêm member ${member} vào bảng ${table_name} thành công`;
+    }
+    return `Member ${member} đã tồn tại trong bảng ${table_name}`;
+  }
+
   update(id: number, updateAuthDbDto: UpdateAuthDbDto) {
     return `This action updates a #${id} authDb`;
   }
 
   async remove(tableName: string) {
-    if(!tableName)
-    {
+    if (!tableName) {
       throw new BadRequestException("chưa truyền tên bảng")
     }
 
     try {
-      await this.authDbRepository.delete({table_name: tableName})
+      await this.authDbRepository.delete({ table_name: tableName })
     } catch (error) {
       throw new BadRequestException('Lỗi khi xóa từ bảng auth-db');
     }
-
-    
-
     const dropTableQuery = `DROP TABLE IF EXISTS \`${tableName}\`;`;
-  
-  try {
-    await this.authDbRepository.manager.query(dropTableQuery);
-    return { message: `Bảng ${tableName} đã được xóa thành công` };
-  } catch (error) {
-    console.error("Lỗi khi xóa bảng:", error);
-    throw new BadRequestException(`Lỗi khi xóa bảng ${tableName}: ${error.message}`);
+
+    try {
+      await this.authDbRepository.manager.query(dropTableQuery);
+      return { message: `Bảng ${tableName} đã được xóa thành công` };
+    } catch (error) {
+      console.error("Lỗi khi xóa bảng:", error);
+      throw new BadRequestException(`Lỗi khi xóa bảng ${tableName}: ${error.message}`);
+    }
   }
+
+  async removeMember(updateAuthDbDto: UpdateAuthDbDto) {
+    const { table_name, member } = updateAuthDbDto;
+    const table = await this.authDbRepository.findOne({ where: { table_name: table_name } });
+
+    if (!table) {
+      throw new BadRequestException('Bảng không tồn tại');
+    }
+
+    let currentMembers = table.member || '';
+    const memberPattern = new RegExp(`\\b${member}\\b`);
+
+    // Kiểm tra xem member có tồn tại không
+    if (memberPattern.test(currentMembers)) {
+      // Loại bỏ member ra khỏi chuỗi
+      const updatedMembers = currentMembers
+        .split(',')
+        .filter(m => m !== member) // Loại bỏ member
+        .join(',');
+
+      // Cập nhật cơ sở dữ liệu
+      await this.authDbRepository.update({ table_name: table_name }, { member: updatedMembers });
+      return `Xóa member ${member} khỏi bảng ${table_name} thành công`;
+    }
+
+    return `Member ${member} không tồn tại trong bảng ${table_name}`;
   }
 }

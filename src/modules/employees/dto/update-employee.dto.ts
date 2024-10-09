@@ -14,7 +14,6 @@ export class UpdateEmployeeDto {
     email: string;
     @IsOptional()
     pass: string;
-    @IsString()
     @IsOptional()
-    role: string;
+    isAdmin: boolean;
 }
